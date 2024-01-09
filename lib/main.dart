@@ -64,7 +64,7 @@ class _HomeState extends State<Home> {
             color: Colors.white, borderRadius: BorderRadius.circular(10)),
         child: Text(
           "${now.hour.toString().padLeft(2, "0")}:${now.minute.toString().padLeft(2, "0")}:${now.second.toString().padLeft(2, "0")}",
-          style: const TextStyle(fontSize: 100),
+          style: const TextStyle(fontSize: 100, fontWeight: FontWeight.bold),
         ),
       ))
     ]));

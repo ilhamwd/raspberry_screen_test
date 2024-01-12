@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,6 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
       ),
@@ -30,12 +35,35 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  String? dataFromApi;
+  String? dataFromMqtt;
+
   @override
   void initState() {
     super.initState();
 
+    final client = MqttServerClient("127.0.0.1", "gwej");
+
+    client.onConnected = () {
+      client.subscribe("random/number", MqttQos.atLeastOnce);
+      client.updates!.listen((event) {
+        setState(() {
+          dataFromMqtt = MqttPublishPayload.bytesToStringAsString(
+              (event.first.payload as MqttPublishMessage).payload.message);
+          ;
+        });
+      });
+    };
+
+    client.connect();
+
     Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      setState(() {});
+      setState(() {
+        get(Uri.parse("http://localhost/random/number")).then((value) {
+          final data = jsonDecode(value.body);
+          dataFromApi = data['number'].toString();
+        });
+      });
     });
   }
 
@@ -46,6 +74,19 @@ class _HomeState extends State<Home> {
 
     return Scaffold(
         body: Stack(children: [
+      Align(
+          alignment: Alignment.topCenter,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            child: Row(
+              children: [
+                Text("API: ${dataFromApi ?? "N/A"}"),
+                const Spacer(),
+                Text("MQTT: ${dataFromMqtt ?? "N/A"}")
+              ],
+            ),
+          )),
       Column(
         children: [
           const Spacer(),
